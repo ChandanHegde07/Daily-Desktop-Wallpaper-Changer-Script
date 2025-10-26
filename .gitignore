@@ -1,0 +1,37 @@
+# Binary files
+*.exe
+*.o
+*.out
+*.a
+*.dSYM/
+
+# IDE and editor settings
+.vscode/
+.idea/
+*.suo
+*.user
+*.ncb
+*.sdf
+*.opensdf
+
+# macOS system files
+.DS_Store
+
+# Windows system files
+Thumbs.db
+desktop.ini
+
+# Linux temporary files
+*~
+
+# Logs and temp files
+*.log
+*.tmp
+
+# Build folders
+/build/
+/bin/
+/obj/
+
+# Wallpaper directory (untracked images)
+Wallpapers/
