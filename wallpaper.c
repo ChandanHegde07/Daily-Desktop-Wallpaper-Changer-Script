@@ -11,8 +11,8 @@
 #define STATE_FILE "C:\\Wallpapers\\.wallpaper_state"
 #define PATH_SEPARATOR '\\'
 #elif __APPLE__
-#define WALLPAPER_PATH "/Users/Shared/Wallpapers/"
-#define STATE_FILE "/Users/Shared/Wallpapers/.wallpaper_state"
+#define WALLPAPER_PATH "./Wallpapers/"  // Fixed: Added closing quote
+#define STATE_FILE "./Wallpapers/.wallpaper_state"
 #define PATH_SEPARATOR '/'
 #include <unistd.h>
 #else
@@ -27,7 +27,6 @@
 #define VERSION "2.0"
 #define SECONDS_PER_DAY 86400
 
-// State structure to track wallpaper rotation
 typedef struct {
     char last_wallpaper[MAX_PATH_LEN];
     time_t last_change_time;
@@ -35,21 +34,17 @@ typedef struct {
     int total_wallpapers;
 } WallpaperState;
 
-// Supported image extensions
 const char *SUPPORTED_EXTENSIONS[] = {
     ".jpg", ".jpeg", ".png", ".bmp", ".gif", ".webp", ".tiff", ".tif", NULL
 };
 
-// Print program header
 void printBanner() {
-    printf("\n");
-    printf("====================================\n");
+    printf("\n====================================\n");
     printf("  Daily Wallpaper Changer v%s\n", VERSION);
     printf("  Cross-Platform Wallpaper Manager\n");
     printf("====================================\n\n");
 }
 
-// Check if filename has supported image extension
 int isImageFile(const char *filename) {
     const char *ext = strrchr(filename, '.');
     if (!ext) return 0;
@@ -62,13 +57,11 @@ int isImageFile(const char *filename) {
     return 0;
 }
 
-// Check if file or directory exists
 int fileExists(const char *path) {
     struct stat buffer;
     return (stat(path, &buffer) == 0);
 }
 
-// Create directory if it doesn't exist
 void createDirectory(const char *path) {
 #ifdef _WIN32
     CreateDirectoryA(path, NULL);
@@ -77,15 +70,10 @@ void createDirectory(const char *path) {
 #endif
 }
 
-// Load previous state from file
 void loadState(WallpaperState *state) {
     FILE *file = fopen(STATE_FILE, "r");
     if (!file) {
-        // Initialize default state
         memset(state, 0, sizeof(WallpaperState));
-        state->wallpaper_index = 0;
-        state->total_wallpapers = 0;
-        state->last_change_time = 0;
         return;
     }
     
@@ -93,15 +81,12 @@ void loadState(WallpaperState *state) {
     fscanf(file, "%d\n", &state->wallpaper_index);
     fscanf(file, "%d\n", &state->total_wallpapers);
     fgets(state->last_wallpaper, MAX_PATH_LEN, file);
-    
-    // Remove trailing newline
     state->last_wallpaper[strcspn(state->last_wallpaper, "\n")] = 0;
-    
     fclose(file);
+    
     printf("[INFO] State loaded: Index %d/%d\n", state->wallpaper_index, state->total_wallpapers);
 }
 
-// Save current state to file
 void saveState(const WallpaperState *state) {
     FILE *file = fopen(STATE_FILE, "w");
     if (!file) {
@@ -113,11 +98,9 @@ void saveState(const WallpaperState *state) {
     fprintf(file, "%d\n", state->wallpaper_index);
     fprintf(file, "%d\n", state->total_wallpapers);
     fprintf(file, "%s\n", state->last_wallpaper);
-    
     fclose(file);
 }
 
-// Collect all wallpapers from directory
 int collectWallpapers(char wallpapers[][MAX_PATH_LEN]) {
     int count = 0;
     DIR *dir;
@@ -128,18 +111,14 @@ int collectWallpapers(char wallpapers[][MAX_PATH_LEN]) {
     dir = opendir(WALLPAPER_PATH);
     if (!dir) {
         fprintf(stderr, "[ERROR] Cannot open wallpaper directory: %s\n", WALLPAPER_PATH);
-        fprintf(stderr, "[ERROR] Create the directory first!\n");
         return 0;
     }
 
     while ((ent = readdir(dir)) != NULL && count < MAX_WALLPAPERS) {
-        // Skip hidden files
-        if (ent->d_name[0] == '.') continue;
+        if (ent->d_name[0] == '.') continue; // Skip hidden files
         
         if (isImageFile(ent->d_name)) {
             snprintf(wallpapers[count], MAX_PATH_LEN, "%s%s", WALLPAPER_PATH, ent->d_name);
-            
-            // Verify file exists
             if (fileExists(wallpapers[count])) {
                 count++;
             }
@@ -151,7 +130,6 @@ int collectWallpapers(char wallpapers[][MAX_PATH_LEN]) {
     return count;
 }
 
-// Set wallpaper using platform-specific methods
 void setWallpaper(const char *imagePath) {
 #ifdef _WIN32
     printf("[INFO] Setting wallpaper (Windows)...\n");
@@ -166,7 +144,7 @@ void setWallpaper(const char *imagePath) {
     printf("[INFO] Setting wallpaper (macOS)...\n");
     char command[MAX_PATH_LEN + 256];
     
-    // Escape spaces in path
+    // Escape spaces in path for AppleScript
     char escaped_path[MAX_PATH_LEN * 2];
     int j = 0;
     for (int i = 0; imagePath[i] != '\0' && j < MAX_PATH_LEN * 2 - 1; i++) {
@@ -187,11 +165,11 @@ void setWallpaper(const char *imagePath) {
         fprintf(stderr, "[ERROR] Failed to set wallpaper\n");
     }
     
-#else // Linux
+#else
     printf("[INFO] Setting wallpaper (Linux)...\n");
     char command[MAX_PATH_LEN + 256];
     
-    // Try multiple desktop environments
+    // Try multiple desktop environments in order
     snprintf(command, sizeof(command),
              "if command -v gsettings > /dev/null 2>&1; then "
              "  gsettings set org.gnome.desktop.background picture-uri \"file://%s\" && "
@@ -204,7 +182,6 @@ void setWallpaper(const char *imagePath) {
              "  xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitor0/workspace0/last-image -s \"%s\"; "
              "else "
              "  echo '[ERROR] No compatible wallpaper tool found'; "
-             "  echo '[ERROR] Install: gsettings, feh, nitrogen, or xfconf-query'; "
              "  exit 1; "
              "fi",
              imagePath, imagePath, imagePath, imagePath, imagePath);
@@ -219,16 +196,12 @@ void setWallpaper(const char *imagePath) {
     printf("[INFO] Current: %s\n", imagePath);
 }
 
-// Check if 24 hours have passed since last change
 int shouldChangeWallpaper(const WallpaperState *state) {
     time_t now = time(NULL);
     time_t elapsed = now - state->last_change_time;
-    
-    // Change if more than 24 hours have passed
     return elapsed >= SECONDS_PER_DAY || state->last_change_time == 0;
 }
 
-// Rotate to next wallpaper in sequence
 void rotateWallpaper(char wallpapers[][MAX_PATH_LEN], int count, WallpaperState *state, int force) {
     if (count == 0) {
         fprintf(stderr, "[ERROR] No wallpapers available\n");
@@ -243,22 +216,17 @@ void rotateWallpaper(char wallpapers[][MAX_PATH_LEN], int count, WallpaperState 
         return;
     }
     
-    // Update state
     state->total_wallpapers = count;
     state->wallpaper_index = (state->wallpaper_index + 1) % count;
     state->last_change_time = time(NULL);
     strncpy(state->last_wallpaper, wallpapers[state->wallpaper_index], MAX_PATH_LEN);
     
-    // Set wallpaper
     setWallpaper(state->last_wallpaper);
-    
-    // Save state
     saveState(state);
     
     printf("[INFO] Progress: %d/%d wallpapers\n", state->wallpaper_index + 1, count);
 }
 
-// Set a random wallpaper
 void setRandomWallpaper(char wallpapers[][MAX_PATH_LEN], int count, WallpaperState *state) {
     if (count == 0) return;
     
@@ -276,7 +244,6 @@ void setRandomWallpaper(char wallpapers[][MAX_PATH_LEN], int count, WallpaperSta
     printf("[INFO] Random: %d/%d\n", randomIndex + 1, count);
 }
 
-// Print usage instructions
 void printUsage(const char *program) {
     printf("Usage: %s [options]\n\n", program);
     printf("Options:\n");
@@ -291,34 +258,21 @@ void printUsage(const char *program) {
     printf("  %s                 # Daily auto-rotation\n", program);
     printf("  %s --force         # Change now\n", program);
     printf("  %s --random        # Pick random wallpaper\n\n", program);
-    printf("Setup:\n");
-    printf("  1. Create folder: %s\n", WALLPAPER_PATH);
-    printf("  2. Add wallpapers (jpg, png, bmp, etc.)\n");
-    printf("  3. Run this program daily (cron/Task Scheduler)\n\n");
 }
 
 int main(int argc, char *argv[]) {
     printBanner();
     
-    // Parse command-line arguments
-    int force = 0;
-    int random_mode = 0;
-    int next_mode = 0;
-    int list_mode = 0;
-    int status_mode = 0;
+    int force = 0, random_mode = 0, next_mode = 0, list_mode = 0, status_mode = 0;
     
+    // Parse command-line arguments
     for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "--force") == 0) {
-            force = 1;
-        } else if (strcmp(argv[i], "--random") == 0) {
-            random_mode = 1;
-        } else if (strcmp(argv[i], "--next") == 0) {
-            next_mode = 1;
-        } else if (strcmp(argv[i], "--list") == 0) {
-            list_mode = 1;
-        } else if (strcmp(argv[i], "--status") == 0) {
-            status_mode = 1;
-        } else if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0) {
+        if (strcmp(argv[i], "--force") == 0) force = 1;
+        else if (strcmp(argv[i], "--random") == 0) random_mode = 1;
+        else if (strcmp(argv[i], "--next") == 0) next_mode = 1;
+        else if (strcmp(argv[i], "--list") == 0) list_mode = 1;
+        else if (strcmp(argv[i], "--status") == 0) status_mode = 1;
+        else if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0) {
             printUsage(argv[0]);
             return 0;
         } else {
@@ -328,7 +282,6 @@ int main(int argc, char *argv[]) {
         }
     }
     
-    // Check if wallpaper directory exists
     if (!fileExists(WALLPAPER_PATH)) {
         fprintf(stderr, "[ERROR] Wallpaper directory not found: %s\n", WALLPAPER_PATH);
         fprintf(stderr, "[INFO] Creating directory...\n");
@@ -337,7 +290,6 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     
-    // Collect all wallpapers from directory
     char wallpapers[MAX_WALLPAPERS][MAX_PATH_LEN];
     int count = collectWallpapers(wallpapers);
     
@@ -347,11 +299,9 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     
-    // Load previous state
     WallpaperState state;
     loadState(&state);
     
-    // Handle list mode
     if (list_mode) {
         printf("\n[LIST] Available Wallpapers:\n");
         printf("----------------------------------------\n");
@@ -365,7 +315,6 @@ int main(int argc, char *argv[]) {
         return 0;
     }
     
-    // Handle status mode
     if (status_mode) {
         printf("\n[STATUS] Current Status:\n");
         printf("----------------------------------------\n");
@@ -390,7 +339,6 @@ int main(int argc, char *argv[]) {
         return 0;
     }
     
-    // Handle different wallpaper modes
     if (random_mode) {
         printf("\n[MODE] Random Mode\n");
         setRandomWallpaper(wallpapers, count, &state);

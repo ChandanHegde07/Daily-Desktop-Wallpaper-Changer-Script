@@ -7,8 +7,9 @@ A C-based program that automatically changes your desktop wallpaper once a day. 
 ## Features
 
 * Cross-platform support (Windows/macOS/Linux)
-* Random wallpaper selection
+* Sequential and random wallpaper selection
 * Lightweight and dependency-free (optional `feh` on Linux)
+* Persistent state tracking across runs
 * Easily automatable with Task Scheduler, cron, or launchd
 
 ---
@@ -30,23 +31,8 @@ Create a folder containing your wallpapers:
 | OS | Path |
 |:---|:-----|
 | Windows | `C:\Wallpapers\` |
-| macOS   | `/Users/Shared/Wallpapers/` |
+| macOS   | `./Wallpapers/` (relative to executable) |
 | Linux   | `/home/<username>/Wallpapers/` |
-
----
-
-
----
-
-## How It Works
-
-* The program scans the wallpaper folder for images
-* Chooses one randomly
-* Calls OS-specific tools:
-  * **Windows:** `SystemParametersInfo` (WinAPI)
-  * **macOS:** `osascript` (AppleScript)
-  * **Linux:** `gsettings` or `feh`
-* Updates the desktop wallpaper instantly
 
 ---
 
@@ -55,6 +41,22 @@ Create a folder containing your wallpapers:
 * `.jpg` / `.jpeg`
 * `.png`
 * `.bmp`
+* `.gif`
+* `.webp`
+* `.tiff` / `.tif`
 
 ---
 
+# Quick Commands
+
+* First time setup
+  * `gcc wallpaper.c -o wallpaper_changer`
+  * `./wallpaper_changer --list`  # Verify images found
+  * `./wallpaper_changer --force` # Set first wallpaper
+
+* Daily usage
+  * `./wallpaper_changer`            # Auto-changes after 24h
+  * `./wallpaper_changer --status`   # Check current state
+  * `./wallpaper_changer --random`   # Pick random wallpaper
+
+---
